@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shiji · Say how it tasted. We'll do the scoring.</title>
+<meta name="description" content="Shiji is a social restaurant-rating app. Describe how a meal felt and Shiji ranks it against the places you've been. See your own scores, your friends' averages, or everyone's on one map.">
+<style>
+  :root {
+    --bg: #FBF7F2;
+    --ink: #2B2420;
+    --muted: #7A6E66;
+    --accent: #E2622B;
+    --accent-soft: #FCE6DA;
+    --green: #3E8E5E;
+    --green-soft: #DDF0E3;
+    --card: #FFFFFF;
+    --line: #EDE4DA;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* 导航 */
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; }
+  .logo-mark {
+    width: 36px; height: 36px; border-radius: 10px; background: var(--accent);
+    color: #fff; display: grid; place-items: center; font-size: 18px;
+  }
+  nav ul { display: flex; gap: 28px; list-style: none; font-size: 15px; color: var(--muted); }
+  nav ul a:hover { color: var(--ink); }
+
+  /* 首屏 */
+  .hero { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center; padding: 48px 0 88px; }
+  .tag {
+    display: inline-block; background: var(--accent-soft); color: var(--accent);
+    font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 99px; margin-bottom: 18px;
+  }
+  h1 { font-size: 54px; line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 18px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 18px; color: var(--muted); max-width: 30em; margin-bottom: 32px; }
+  .btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    padding: 13px 26px; border-radius: 12px; font-weight: 600; font-size: 15px;
+    border: 1.5px solid var(--ink); transition: transform .15s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn.primary { background: var(--ink); color: #fff; }
+
+  /* 手机示意：打分流程 */
+  .phone {
+    width: 290px; margin: 0 auto; background: var(--card); border-radius: 36px;
+    border: 10px solid var(--ink); padding: 20px 16px; box-shadow: 0 30px 60px -20px rgba(43,36,32,.25);
+  }
+  .p-title { font-size: 12px; color: var(--muted); }
+  .p-name { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .chip { font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--bg); border: 1px solid var(--line); }
+  .chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .note { font-size: 13px; background: var(--bg); border-radius: 12px; padding: 10px 12px; color: var(--ink); margin-bottom: 14px; }
+  .compare { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .rank-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 10px; border-radius: 10px; font-size: 13px; margin-bottom: 6px; background: var(--bg);
+  }
+  .rank-row.new { background: var(--green-soft); border: 1.5px solid var(--green); font-weight: 700; }
+  .rank-row b { font-variant-numeric: tabular-nums; }
+  .result {
+    margin-top: 12px; padding: 12px; border-radius: 14px; background: var(--ink);
+    color: #fff; font-size: 13px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .result strong { font-size: 22px; color: #FFB48F; }
+
+  /* 通用 section */
+  section { padding: 80px 0; }
+  .section-title { text-align: center; margin-bottom: 48px; }
+  .section-title h2 { font-size: 34px; margin-bottom: 8px; }
+  .section-title p { color: var(--muted); max-width: 34em; margin: 0 auto; }
+
+  /* 对比：传统打分 vs 食记 */
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .vs-card { border-radius: 20px; padding: 30px 28px; border: 1px solid var(--line); background: var(--card); }
+  .vs-card.good { border: 2px solid var(--accent); }
+  .vs-card h3 { font-size: 18px; margin-bottom: 14px; }
+  .vs-card ul { list-style: none; }
+  .vs-card li { font-size: 15px; color: var(--muted); padding: 6px 0 6px 26px; position: relative; }
+  .vs-card li::before { position: absolute; left: 0; }
+  .vs-card.bad li::before { content: "✕"; color: #B9ADA3; }
+  .vs-card.good li::before { content: "✓"; color: var(--accent); font-weight: 700; }
+  .vs-card.good li { color: var(--ink); }
+
+  /* 步骤 */
+  .steps-bg { background: var(--card); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; counter-reset: step; }
+  .step { position: relative; padding-left: 56px; }
+  .step::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 0; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--ink); color: #fff; display: grid; place-items: center; font-weight: 700;
+  }
+  .step h3 { font-size: 17px; margin-bottom: 4px; }
+  .step p { font-size: 14px; color: var(--muted); }
+
+  /* 地图三视角 */
+  .map-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .map {
+    position: relative; height: 340px; border-radius: 24px; overflow: hidden;
+    background:
+      linear-gradient(90deg, transparent 47%, #fff 47%, #fff 53%, transparent 53%),
+      linear-gradient(0deg, transparent 30%, #fff 30%, #fff 35%, transparent 35%),
+      linear-gradient(0deg, transparent 70%, #fff 70%, #fff 74%, transparent 74%),
+      #E8EFE6;
+    border: 1px solid var(--line);
+  }
+  .seg {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; background: rgba(255,255,255,.95); border-radius: 12px; padding: 4px; gap: 2px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.08); font-size: 13px;
+  }
+  .seg button {
+    border: 0; background: transparent; padding: 6px 12px; border-radius: 9px; cursor: pointer;
+    font: inherit; color: var(--muted);
+  }
+  .seg button.on { background: var(--ink); color: #fff; font-weight: 600; }
+  .pin {
+    position: absolute; transform: translate(-50%, -100%);
+    background: var(--card); border-radius: 12px; padding: 4px 10px; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 16px rgba(0,0,0,.12); white-space: nowrap;
+  }
+  .pin::after {
+    content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: var(--card); border-bottom: 0;
+  }
+  .pin small { font-weight: 400; color: var(--muted); margin-right: 4px; }
+  .pin b { color: var(--accent); }
+  .views { list-style: none; }
+  .views li { display: flex; gap: 14px; margin-bottom: 22px; }
+  .views .icon {
+    flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--accent-soft);
+    display: grid; place-items: center; font-size: 20px;
+  }
+  .views h3 { font-size: 17px; margin-bottom: 2px; }
+  .views p { font-size: 14px; color: var(--muted); }
+
+  /* 功能 */
+  .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .feature { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 26px 22px; }
+  .feature .icon {
+    width: 44px; height: 44px; border-radius: 12px; background: var(--accent-soft);
+    display: grid; place-items: center; font-size: 22px; margin-bottom: 16px;
+  }
+  .feature h3 { font-size: 17px; margin-bottom: 6px; }
+  .feature p { font-size: 14px; color: var(--muted); }
+
+  /* CTA */
+  .cta { background: var(--ink); color: #fff; border-radius: 28px; padding: 56px 40px; text-align: center; }
+  .cta h2 { font-size: 32px; margin-bottom: 10px; }
+  .cta p { color: #CFC5BC; margin-bottom: 28px; }
+  .cta .btn { border-color: #fff; color: #fff; }
+  .cta .btn.primary { background: var(--accent); border-color: var(--accent); }
+
+  footer { padding: 40px 0; text-align: center; font-size: 13px; color: var(--muted); }
+
+  @media (max-width: 860px) {
+    .hero, .map-wrap, .vs { grid-template-columns: 1fr; }
+    .hero { padding-top: 24px; }
+    h1 { font-size: 38px; }
+    .features { grid-template-columns: repeat(2, 1fr); }
+    .steps { grid-template-columns: 1fr; }
+    nav ul { display: none; }
+  }
+  @media (max-width: 520px) {
+    .features { grid-template-columns: 1fr; }
+    .seg button { padding: 6px 8px; }
+  }
+  .lang { font-weight:600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav>
+    <a href="#" class="logo"><span class="logo-mark">食</span>Shiji</a>
+    <ul>
+      <li><a href="#why">Why Shiji</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#map">Map</a></li>
+      <li><a href="#contact">Contact</a></li>
+      <li><a href="zh.html" class="lang">中文</a></li>
+    </ul>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <span class="tag">Coming soon to iOS</span>
+      <h1>Say how it tasted.<br><em>We'll do the scoring.</em></h1>
+      <p class="lead">Shiji is a social app for rating restaurants. No more agonizing over four stars or five. Just describe how the meal felt, and Shiji compares it with the other places you've been to figure out where it ranks for you and what it scores.</p>
+      <div class="btns">
+        <a href="#contact" class="btn primary">Get early access</a>
+        <a href="#how" class="btn">See how it works</a>
+      </div>
+    </div>
+
+    <div class="phone" aria-hidden="true">
+      <div class="p-title">Just visited</div>
+      <div class="p-name">Old Street Beef Noodles</div>
+      <div class="chips">
+        <span class="chip on">Rich broth</span>
+        <span class="chip on">Big portions</span>
+        <span class="chip">Plain decor</span>
+        <span class="chip on">Would return</span>
+        <span class="chip">Pricey</span>
+      </div>
+      <div class="note">The broth actually tastes slow-cooked. Way better than the place by campus.</div>
+      <div class="compare">Compared with noodle shops you've tried</div>
+      <div class="rank-row"><span>1. Chongqing Noodle House</span><b>9.1</b></div>
+      <div class="rank-row new"><span>2. Old Street Beef Noodles</span><b>8.6</b></div>
+      <div class="rank-row"><span>3. Campus Ramen</span><b>7.2</b></div>
+      <div class="result"><span>Ranked #2 of the<br>14 places you've rated</span><strong>8.6</strong></div>
+    </div>
+  </header>
+</div>
+
+<section id="why">
+  <div class="wrap">
+    <div class="section-title">
+      <h2>Why not just use stars?</h2>
+      <p>One person's four stars is another person's five. Pile up enough ratings and every decent place ends up at 4.5.</p>
+    </div>
+    <div class="vs">
+      <div class="vs-card bad">
+        <h3>Star ratings</h3>
+        <ul>
+          <li>You have to decide on a number right after eating</li>
+          <li>Everyone grades on a different curve</li>
+          <li>Good places all cluster at the top, so scores stop meaning much</li>
+        </ul>
+      </div>
+      <div class="vs-card good">
+        <h3>Shiji</h3>
+        <ul>
+          <li>You only describe what you liked and what you didn't</li>
+          <li>Each new place is compared with restaurants you've already been to</li>
+          <li>Your rank becomes a score, so your standards stay consistent</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="steps-bg">
+  <div class="wrap">
+    <div class="section-title">
+      <h2>Rate a meal in three steps</h2>
+      <p>No stars, no long reviews</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <h3>Pick the restaurant</h3>
+        <p>Search nearby or tap it right on the map.</p>
+      </div>
+      <div class="step">
+        <h3>Describe the experience</h3>
+        <p>Tap a few tags and add a line if you want. Great, meh, worth it or not, just be honest.</p>
+      </div>
+      <div class="step">
+        <h3>Get your ranking</h3>
+        <p>Shiji places it among similar restaurants you've rated and gives it a score on your personal list.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="map">
+  <div class="wrap map-wrap">
+    <div class="map" id="mapDemo" aria-label="Map views demo">
+      <div class="seg" role="tablist">
+        <button class="on" data-view="me">Mine</button>
+        <button data-view="follow">Following</button>
+        <button data-view="all">Everyone</button>
+      </div>
+      <div class="pin" style="left:28%;top:42%"><small>Noodles</small><b data-me="8.6" data-follow="8.2" data-all="7.9">8.6</b></div>
+      <div class="pin" style="left:68%;top:28%"><small>Café</small><b data-me="7.4" data-follow="8.8" data-all="8.1">7.4</b></div>
+      <div class="pin" style="left:62%;top:66%"><small>Hot pot</small><b data-me="9.3" data-follow="9.0" data-all="8.4">9.3</b></div>
+      <div class="pin" style="left:22%;top:82%"><small>Sushi</small><b data-me="—" data-follow="8.5" data-all="8.7">—</b></div>
+    </div>
+    <div>
+      <div class="section-title" style="text-align:left;margin-bottom:28px">
+        <h2>One map, three views</h2>
+        <p style="margin:0">The same restaurant can look very different to you, your friends and everyone else. Tap the buttons on the map to switch.</p>
+      </div>
+      <ul class="views">
+        <li><div class="icon">🙋</div><div><h3>Mine</h3><p>Every place you've been and the score you gave it: your own food map.</p></div></li>
+        <li><div class="icon">👥</div><div><h3>Following</h3><p>The average score from people you follow. Friends with similar taste are often a better guide than strangers.</p></div></li>
+        <li><div class="icon">🌏</div><div><h3>Everyone</h3><p>The average across all users, handy when you're somewhere new and want a safe bet.</p></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="steps-bg">
+  <div class="wrap">
+    <div class="section-title">
+      <h2>More to explore</h2>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="icon">🏆</div>
+        <h3>Personal rankings</h3>
+        <p>Separate lists for noodles, hot pot, coffee and more, ordered by your own taste.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">📰</div>
+        <h3>Friend feed</h3>
+        <p>See where the people you follow have been eating and what they thought.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🤖</div>
+        <h3>AI tiebreaker</h3>
+        <p>When two places are hard to compare, AI reads your descriptions and helps settle the ranking.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">☁️</div>
+        <h3>Cloud sync</h3>
+        <p>Sign in and your lists sync automatically, even when you switch phones.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="wrap">
+    <div class="cta">
+      <h2>Want to try Shiji first?</h2>
+      <p>Shiji is in development and launching on iOS first. Send us an email and we'll let you know when it's ready.</p>
+      <div class="btns" style="justify-content:center">
+        <a href="mailto:hello@example.com" class="btn primary">Email us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">© 2026 Shiji 食记 · Say how it tasted. We'll do the scoring.</div>
+</footer>
+
+<script>
+  // Map view switcher demo
+  (function () {
+    var map = document.getElementById('mapDemo');
+    var buttons = map.querySelectorAll('.seg button');
+    var scores = map.querySelectorAll('.pin b');
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        buttons.forEach(function (b) { b.classList.remove('on'); });
+        btn.classList.add('on');
+        var view = btn.getAttribute('data-view');
+        scores.forEach(function (s) { s.textContent = s.getAttribute('data-' + view); });
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
